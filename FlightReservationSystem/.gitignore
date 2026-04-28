@@ -1,0 +1,12 @@
+# Compiled Java classes
+out/
+*.class
+
+# MySQL connector JAR (too big, teammates download their own)
+lib/
+
+# Mac junk
+.DS_Store
+
+# Windows junk
+Thumbs.db
