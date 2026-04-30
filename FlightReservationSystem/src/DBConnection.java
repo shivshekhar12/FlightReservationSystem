@@ -26,7 +26,7 @@ public class DBConnection {
                 connection.close();
             }
         } 
-        catch (SQLException e) {
+        catch (SQLException _) {
         }
     }
 }

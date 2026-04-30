@@ -48,6 +48,7 @@ create table Flight (
     base_business_fare decimal(10,2) not null default 0.00,
     base_first_fare decimal(10,2) not null default 0.00,
     booking_fee decimal(10,2) not null default 25.00,
+    stops integer not null default 0,
     primary key (flight_no, airline_id),
     foreign key (airline_id) references Airline(airline_id),
     foreign key (aircraft_id) references Aircraft(aircraft_id),
@@ -153,8 +154,8 @@ INSERT INTO Airport VALUES ('ORD', 'OHare Intl', 'Chicago', 'USA');
 INSERT INTO Aircraft VALUES (1, 'AA', 'Boeing 737', 120, 30, 10);
 INSERT INTO Aircraft VALUES (2, 'UA', 'Airbus A320', 100, 20, 8);
 
-INSERT INTO Flight VALUES ('AA100','AA',1,'JFK','LAX','08:00','11:00',0,199.99,499.99,899.99,25.00);
-INSERT INTO Flight VALUES ('UA200','UA',2,'JFK','ORD','09:00','11:00',0,149.99,399.99,699.99,25.00);
+INSERT INTO Flight VALUES ('AA100','AA',1,'JFK','LAX','08:00','11:00',0,199.99,499.99,899.99,25.00,0);
+INSERT INTO Flight VALUES ('UA200','UA',2,'JFK','ORD','09:00','11:00',0,149.99,399.99,699.99,25.00,0);
 
 INSERT INTO Flight_Day VALUES ('AA100','AA','Monday');
 INSERT INTO Flight_Day VALUES ('AA100','AA','Wednesday');

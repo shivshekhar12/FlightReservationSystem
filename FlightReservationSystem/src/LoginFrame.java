@@ -28,32 +28,7 @@ public class LoginFrame extends JFrame {
 
         labelMessage = new JLabel(" ");
 
-        JButton buttonLogin = new JButton("Login");
-        JButton buttonRegister = new JButton("Register as Customer");
-        JButton buttonClear = new JButton("Clear");
-
-        buttonLogin.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                doLogin();
-            }
-        });
-        buttonRegister.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                doRegister();
-            }
-        });
-        buttonClear.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                textFieldUsername.setText("");
-                textFieldPassword.setText("");
-                labelMessage.setText(" ");
-            }
-        });
-
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 3));
-        buttonPanel.add(buttonLogin);
-        buttonPanel.add(buttonRegister);
-        buttonPanel.add(buttonClear);
+        JPanel buttonPanel = getJPanel();
 
         JPanel main = new JPanel(new BorderLayout());
         main.add(inputPanel, BorderLayout.NORTH);
@@ -65,6 +40,27 @@ public class LoginFrame extends JFrame {
         this.setSize(520, 220);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setVisible(true);
+    }
+
+    private JPanel getJPanel() {
+        JButton buttonLogin = new JButton("Login");
+        JButton buttonRegister = new JButton("Register as Customer");
+
+        buttonLogin.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                doLogin();
+            }
+        });
+
+        buttonRegister.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                doRegister();
+            }
+        });
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2));
+        buttonPanel.add(buttonLogin);
+        buttonPanel.add(buttonRegister);
+        return buttonPanel;
     }
 
     private void doLogin() {
@@ -151,7 +147,7 @@ public class LoginFrame extends JFrame {
 
         try {
             DBConnection.getStatement().executeUpdate("INSERT INTO Customer (name, email, phone, username, password_hash) " + "VALUES ('" + name + "','" + email + "','" + phone + "','" + user + "','" + pass + "')");
-            labelMessage.setText("Account created! You can now log in.");
+            labelMessage.setText("Account created. login.");
         } 
         catch (SQLException ex) {
             labelMessage.setText("Error: " + ex.getMessage());
