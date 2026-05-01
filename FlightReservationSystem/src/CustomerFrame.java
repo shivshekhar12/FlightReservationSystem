@@ -24,7 +24,7 @@ public class CustomerFrame extends JFrame {
         tabs.addTab("Ask a Question", buildQuestionsTab());
         this.add(tabs);
         this.setTitle("Flight Reservation System: " + customerName);
-        this.setSize(900, 600);
+        this.setSize(1200, 600);    
         this.setMinimumSize(new Dimension(700, 500));
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
@@ -129,7 +129,7 @@ public class CustomerFrame extends JFrame {
                 else if (stopsCombo.getSelectedIndex() == 2){
                     stopsFilter = " AND f.stops >= 1";
                 }
-                String query = "SELECT f.flight_no, f.airline_id, f.dep_airport_id, f.arr_airport_id, " + "f.dep_time, f.arr_time, " + "TIMEDIFF(f.arr_time, f.dep_time) AS duration, " + "f.base_economy_fare, f.base_business_fare, f.base_first_fare, " + " f.stops AS stops " + "FROM Flight f " + "JOIN Flight_Day fd ON f.flight_no=fd.flight_no AND f.airline_id=fd.airline_id " + " WHERE f.dep_airport_id='" + from + "' AND f.arr_airport_id='" + to + "' " + "  AND (" + dateFilter + ") " + priceFilter + airlineFilter + stopsFilter + "ORDER BY " + orderBy;
+                String query = "SELECT f.flight_no, f.airline_id, f.dep_airport_id, f.arr_airport_id, " + "f.dep_time, f.arr_time, " + "TIMEDIFF(f.arr_time, f.dep_time) AS duration, " + "f.base_economy_fare, f.base_business_fare, f.base_first_fare, " + " f.stops AS stops " + "FROM Flight f " + "JOIN Flight_Day fd ON f.flight_no=fd.flight_no AND f.airline_id=fd.airline_id " + " WHERE f.dep_airport_id='" + from + "' AND f.arr_airport_id='" + to + "' " + "  AND (" + dateFilter + ") " + priceFilter + airlineFilter + stopsFilter + " ORDER BY " + orderBy;
                 try {
                     ResultSet resultSet = DBConnection.getStatement().executeQuery(query);
                     int count = 0;
