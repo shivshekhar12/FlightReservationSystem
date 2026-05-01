@@ -7,7 +7,7 @@ import javax.swing.table.*;
 public class AnswerQuestionsTab {
 
     public static JPanel build(JFrame parentFrame, int empId) {
-        String[] columns = {"#", "Customer", "Subject", "Question", "Answer", "Asked", "Answered"};
+        String[] columns = {"#", "Customer", "Question", "Answer", "Asked", "Answered"};
         DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
@@ -31,7 +31,7 @@ public class AnswerQuestionsTab {
             public void actionPerformed(ActionEvent e) {
                 tableModel.setRowCount(0);
                 try {
-                    ResultSet rs = DBConnection.getStatement().executeQuery("SELECT q.question_id, c.name, q.subject, q.question_text, " + "q.answer_text, q.asked_at, q.answered_at " + "FROM Customer_Question q JOIN Customer c ON q.cust_id=c.cust_id " + "ORDER BY q.asked_at DESC");
+                    ResultSet rs = DBConnection.getStatement().executeQuery("SELECT q.question_id, c.name, q.question_text, " + "q.answer_text, q.asked_at, q.answered_at " + "FROM Customer_Question q JOIN Customer c ON q.cust_id=c.cust_id " + "ORDER BY q.asked_at DESC");
                     int count = 0;
                     while (rs.next()) {
                         String answerText = rs.getString("answer_text");
@@ -50,7 +50,7 @@ public class AnswerQuestionsTab {
                         else {
                             displayAnsweredAt = "-";
                         }
-                        tableModel.addRow(new Object[]{rs.getInt("question_id"), rs.getString("name"), rs.getString("subject"), rs.getString("question_text"), displayAnswer, rs.getString("asked_at"), displayAnsweredAt});
+                        tableModel.addRow(new Object[]{rs.getInt("question_id"), rs.getString("name"), rs.getString("question_text"), displayAnswer, rs.getString("asked_at"), displayAnsweredAt});
                         count++;
                     }
                     messageLabel.setText(count + " question(s) total.");
@@ -69,7 +69,7 @@ public class AnswerQuestionsTab {
                     return;
                 }
                 int questionId = (int) tableModel.getValueAt(selectedRow, 0);
-                String question = (String) tableModel.getValueAt(selectedRow, 3);
+                String question = (String) tableModel.getValueAt(selectedRow, 2);
 
                 JTextArea answerArea = new JTextArea(5, 40);
                 answerArea.setLineWrap(true);
@@ -117,10 +117,10 @@ public class AnswerQuestionsTab {
     private static void loadUnanswered(DefaultTableModel tableModel, JLabel messageLabel) {
         tableModel.setRowCount(0);
         try {
-            ResultSet rs = DBConnection.getStatement().executeQuery("SELECT q.question_id, c.name, q.subject, q.question_text, " + "q.asked_at FROM Customer_Question q JOIN Customer c ON q.cust_id=c.cust_id " + "WHERE q.answer_text IS NULL ORDER BY q.asked_at ASC");
+            ResultSet rs = DBConnection.getStatement().executeQuery("SELECT q.question_id, c.name, q.question_text, " + "q.asked_at FROM Customer_Question q JOIN Customer c ON q.cust_id=c.cust_id " + "WHERE q.answer_text IS NULL ORDER BY q.asked_at ASC");
             int count = 0;
             while (rs.next()) {
-                tableModel.addRow(new Object[]{rs.getInt("question_id"), rs.getString("name"), rs.getString("subject"), rs.getString("question_text"), "(unanswered)", rs.getString("asked_at"), "-"});
+                tableModel.addRow(new Object[]{rs.getInt("question_id"), rs.getString("name"), rs.getString("question_text"), "(unanswered)", rs.getString("asked_at"), "-"});
                 count++;
             }
             messageLabel.setText(count + " unanswered question(s).");

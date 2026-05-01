@@ -9,7 +9,7 @@ public class RevenueSummaryTab {
     public static JPanel build() {
         JComboBox<String> groupByCombo = new JComboBox<>(new String[]{"By Flight", "By Airline", "By Customer"});
 
-        String[] columns = {"Group", "Tickets Sold", "Total Fare", "Total Booking Fees", "Grand Total"};
+        String[] columns = {"Group", "Tickets Sold", "Grand Total"};
         DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
@@ -27,20 +27,19 @@ public class RevenueSummaryTab {
                 int selectedIndex = groupByCombo.getSelectedIndex();
                 String query;
                 if (selectedIndex == 0) {
-                    query = "SELECT tf.flight_no AS grp, COUNT(DISTINCT t.ticket_no) AS cnt, " + "SUM(t.total_fare) AS fare, SUM(t.booking_fee) AS fees, " + "SUM(t.total_fare + t.booking_fee) AS grand " + "FROM Ticket t JOIN Ticket_Flight tf ON t.ticket_no=tf.ticket_no " + "WHERE t.status!='cancelled' GROUP BY tf.flight_no ORDER BY grand DESC";
+                    query = "SELECT tf.flight_no AS grp, COUNT(DISTINCT t.ticket_no) AS cnt, " + "SUM(t.total_fare + t.booking_fee) AS grand " + "FROM Ticket t JOIN Ticket_Flight tf ON t.ticket_no=tf.ticket_no " + "WHERE t.status!='cancelled' GROUP BY tf.flight_no ORDER BY grand DESC";
                 }
                 else if (selectedIndex == 1) {
-                    query = "SELECT tf.airline_id AS grp, COUNT(DISTINCT t.ticket_no) AS cnt, " + "SUM(t.total_fare) AS fare, SUM(t.booking_fee) AS fees, " + "SUM(t.total_fare + t.booking_fee) AS grand " + "FROM Ticket t JOIN Ticket_Flight tf ON t.ticket_no=tf.ticket_no " + "WHERE t.status!='cancelled' GROUP BY tf.airline_id ORDER BY grand DESC";
+                    query = "SELECT tf.airline_id AS grp, COUNT(DISTINCT t.ticket_no) AS cnt, " + "SUM(t.total_fare + t.booking_fee) AS grand " + "FROM Ticket t JOIN Ticket_Flight tf ON t.ticket_no=tf.ticket_no " + "WHERE t.status!='cancelled' GROUP BY tf.airline_id ORDER BY grand DESC";
                 }
                 else {
-                    query = "SELECT c.name AS grp, COUNT(DISTINCT t.ticket_no) AS cnt, " + "SUM(t.total_fare) AS fare, SUM(t.booking_fee) AS fees, " + "SUM(t.total_fare + t.booking_fee) AS grand " + "FROM Ticket t JOIN Customer c ON t.cust_id=c.cust_id " + "WHERE t.status!='cancelled' GROUP BY c.cust_id ORDER BY grand DESC";
+                    query = "SELECT c.name AS grp, COUNT(DISTINCT t.ticket_no) AS cnt, " + "SUM(t.total_fare + t.booking_fee) AS grand " + "FROM Ticket t JOIN Customer c ON t.cust_id=c.cust_id " + "WHERE t.status!='cancelled' GROUP BY c.cust_id ORDER BY grand DESC";
                 }
                 try {
                     ResultSet rs = DBConnection.getStatement().executeQuery(query);
                     int count = 0;
                     while (rs.next()) {
-                        tableModel.addRow(new Object[]{rs.getString("grp"), rs.getInt("cnt"), "$" + String.format("%.2f", rs.getDouble("fare")), "$" + String.format("%.2f", rs.getDouble("fees")), "$" + String.format("%.2f", rs.getDouble("grand"))});
-                        count++;
+                        tableModel.addRow(new Object[]{rs.getString("grp"), rs.getInt("cnt"), "$" + String.format("%.2f", rs.getDouble("grand"))});                        count++;
                     }
                     messageLabel.setText(count + " group(s).");
                 }

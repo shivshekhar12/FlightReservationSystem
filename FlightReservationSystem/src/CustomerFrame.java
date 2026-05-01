@@ -38,7 +38,7 @@ public class CustomerFrame extends JFrame {
         final JComboBox<String> tripTypeCombo = new JComboBox<>(new String[]{"One-Way", "Round-Trip"});
         final JTextField returnDateField = new JTextField(10);
         final JCheckBox flexibleCheckBox = new JCheckBox("Flexible +-3 days");
-        final JComboBox<String> sortCombo = new JComboBox<>(new String[]{"Sort: Price Up", "Sort: Price Down", "Sort: Departure Up", "Sort: Departure Down", "Sort: Arrival Up", "Sort: Arrival Down", "Sort: Duration Up", "Sort: Duration Down"});
+        final JComboBox<String> sortCombo = new JComboBox<>(new String[]{"Sort: Price Up", "Sort: Price Down", "Sort: Departure Up", "Sort: Departure Down", "Sort: Arrival Up", "Sort: Arrival Down"});
         final JTextField maxPriceField = new JTextField(6);
         final JComboBox<String> stopsCombo = new JComboBox<>(new String[]{"Any Stops", "Direct Only", "1+ Stop"});
         final JTextField airlineFilterField = new JTextField(5);
@@ -57,9 +57,9 @@ public class CustomerFrame extends JFrame {
         bookButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = resultsTable.getSelectedRow();
-                if (selectedRow < 0) { 
-                    messageLabel.setText("Select a flight first."); 
-                    return; 
+                if (selectedRow < 0) {
+                    messageLabel.setText("Select a flight first.");
+                    return;
                 }
                 String flightNo  = (String) tableModel.getValueAt(selectedRow, 0);
                 String airlineId = (String) tableModel.getValueAt(selectedRow, 1);
@@ -98,22 +98,16 @@ public class CustomerFrame extends JFrame {
                 else if (sortCombo.getSelectedIndex() == 4){
                     orderBy = "f.arr_time ASC";
                 }
-                else if (sortCombo.getSelectedIndex() == 5){
-                    orderBy = "f.arr_time DESC";
-                }
-                else if (sortCombo.getSelectedIndex() == 6){
-                    orderBy = "TIMEDIFF(f.arr_time, f.dep_time) ASC";
-                }
                 else {
-                    orderBy = "TIMEDIFF(f.arr_time, f.dep_time) DESC";
+                    orderBy = "f.arr_time DESC";
                 }
 
                 String dateFilter;
                 if (flexible) {
-                    dateFilter = "fd.dep_date BETWEEN DATE_SUB('" + date + "', INTERVAL 3 DAY) AND DATE_ADD('" + date + "', INTERVAL 3 DAY)";
+                    dateFilter = "fd.day_of_week = DAYNAME(DATE_ADD('" + date + "', INTERVAL 0 DAY)) OR fd.day_of_week = DAYNAME(DATE_SUB('" + date + "', INTERVAL 1 DAY)) OR fd.day_of_week = DAYNAME(DATE_ADD('" + date + "', INTERVAL 1 DAY)) OR fd.day_of_week = DAYNAME(DATE_SUB('" + date + "', INTERVAL 2 DAY)) OR fd.day_of_week = DAYNAME(DATE_ADD('" + date + "', INTERVAL 2 DAY)) OR fd.day_of_week = DAYNAME(DATE_SUB('" + date + "', INTERVAL 3 DAY)) OR fd.day_of_week = DAYNAME(DATE_ADD('" + date + "', INTERVAL 3 DAY))";
                 }
                 else {
-                    dateFilter = "fd.dep_date = '" + date + "'";
+                    dateFilter = "fd.day_of_week = DAYNAME('" + date + "')";
                 }
 
                 String priceFilter = "";
@@ -135,13 +129,12 @@ public class CustomerFrame extends JFrame {
                 else if (stopsCombo.getSelectedIndex() == 2){
                     stopsFilter = " AND f.stops >= 1";
                 }
-                String query = "SELECT f.flight_no, f.airline_id, f.dep_airport_id, f.arr_airport_id, " + "f.dep_time, f.arr_time, " + "TIMEDIFF(f.arr_time, f.dep_time) AS duration, " + "f.base_economy_fare, f.base_business_fare, f.base_first_fare, " + " f.stops AS stops " + "FROM Flight f " + "JOIN Flight_Day fd ON f.flight_no=fd.flight_no AND f.airline_id=fd.airline_id " + " WHERE f.dep_airport_id='" + from + "' AND f.arr_airport_id='" + to + "' " + "  AND " + dateFilter + "  AND fd.day_of_week = DAYNAME('" + date + "') " + priceFilter + airlineFilter + stopsFilter + "ORDER BY " + orderBy;
+                String query = "SELECT f.flight_no, f.airline_id, f.dep_airport_id, f.arr_airport_id, " + "f.dep_time, f.arr_time, " + "TIMEDIFF(f.arr_time, f.dep_time) AS duration, " + "f.base_economy_fare, f.base_business_fare, f.base_first_fare, " + " f.stops AS stops " + "FROM Flight f " + "JOIN Flight_Day fd ON f.flight_no=fd.flight_no AND f.airline_id=fd.airline_id " + " WHERE f.dep_airport_id='" + from + "' AND f.arr_airport_id='" + to + "' " + "  AND (" + dateFilter + ") " + priceFilter + airlineFilter + stopsFilter + "ORDER BY " + orderBy;
                 try {
                     ResultSet resultSet = DBConnection.getStatement().executeQuery(query);
                     int count = 0;
                     while (resultSet.next()) {
-                        tableModel.addRow(new Object[]{resultSet.getString("flight_no"), resultSet.getString("airline_id"), resultSet.getString("dep_airport_id"), resultSet.getString("arr_airport_id"), resultSet.getString("dep_time"), resultSet.getString("arr_time"), resultSet.getString("duration"), "$" + resultSet.getString("base_economy_fare"), "$" + resultSet.getString("base_business_fare"), "$" + resultSet.getString("base_first_fare"), resultSet.getString("stops")});
-                        count++;
+                        tableModel.addRow(new Object[]{resultSet.getString("flight_no"), resultSet.getString("airline_id"), resultSet.getString("dep_airport_id"), resultSet.getString("arr_airport_id"), resultSet.getString("dep_time"), resultSet.getString("arr_time"), resultSet.getString("duration"), "$" + resultSet.getString("base_economy_fare"), "$" + resultSet.getString("base_business_fare"), "$" + resultSet.getString("base_first_fare"), resultSet.getString("stops")});                        count++;
                     }
                     if (count == 0) {
                         messageLabel.setText("No flights found.");
@@ -378,11 +371,12 @@ public class CustomerFrame extends JFrame {
 
     private void doCancelReservation(int ticketNo, String selectedClass, DefaultTableModel tableModel, JLabel messageLabel) {
         if (selectedClass.equals("economy")) {
-            messageLabel.setForeground(Color.RED);
-            messageLabel.setText("Economy tickets cannot be cancelled. Contact a representative.");
-            return;
+            int feeConfirm = JOptionPane.showConfirmDialog(this, "Economy tickets require a cancellation fee of $50. Proceed?", "Cancellation Fee", JOptionPane.YES_NO_OPTION);
+            if (feeConfirm != JOptionPane.YES_OPTION) {
+                return;
+            }
         }
-        int confirm = JOptionPane.showConfirmDialog(this, "Cancel ticket #" + ticketNo + "? This cannot be undone.", "Confirm Cancellation", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this, "Cancel ticket #" + ticketNo, "Confirm Cancellation", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION){
             return;
         }
@@ -406,16 +400,13 @@ public class CustomerFrame extends JFrame {
     }
 
     private JPanel buildQuestionsTab() {
-        final JTextField subjectField = new JTextField(30);
         final JTextArea  questionArea = new JTextArea(4, 40);
         questionArea.setLineWrap(true);
         questionArea.setWrapStyleWord(true);
 
         final JLabel postMessageLabel = new JLabel(" ");
-        JButton postButton = getJButton(subjectField, questionArea, postMessageLabel);
-        JPanel inputFields = new JPanel(new GridLayout(2, 2, 5, 5));
-        inputFields.add(new JLabel("Subject:"));
-        inputFields.add(subjectField);
+        JButton postButton = getJButton(questionArea, postMessageLabel);
+        JPanel inputFields = new JPanel(new GridLayout(1, 2, 5, 5));
         inputFields.add(new JLabel("Question:"));
         inputFields.add(new JScrollPane(questionArea));
 
@@ -427,76 +418,25 @@ public class CustomerFrame extends JFrame {
         postPanel.setBorder(BorderFactory.createTitledBorder("Post a New Question"));
         postPanel.add(inputFields, BorderLayout.CENTER);
         postPanel.add(postBottomPanel, BorderLayout.SOUTH);
-
-        final String[] columns = {"#", "Subject", "Question", "Answer", "Asked", "Answered"};
-        final DefaultTableModel questionsModel = new DefaultTableModel(columns, 0) {
-            public boolean isCellEditable(int row, int col) { return false; }
-        };
-        final JTable questionsTable = new JTable(questionsModel);
-        questionsTable.setRowHeight(22);
-        JButton loadQuestionsButton = getJButton(questionsModel, postMessageLabel);
-        JPanel historyPanel = new JPanel(new BorderLayout(5, 5));
-        historyPanel.setBorder(BorderFactory.createTitledBorder("My Questions & Replies"));
-        historyPanel.add(new JScrollPane(questionsTable), BorderLayout.CENTER);
-        historyPanel.add(loadQuestionsButton, BorderLayout.SOUTH);
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         panel.add(postPanel, BorderLayout.NORTH);
-        panel.add(historyPanel, BorderLayout.CENTER);
         return panel;
     }
 
-    private JButton getJButton(DefaultTableModel questionsModel, JLabel postMessageLabel) {
-        JButton loadQuestionsButton = new JButton("Load My Questions");
-        loadQuestionsButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                questionsModel.setRowCount(0);
-                try {
-                    ResultSet resultSet = DBConnection.getStatement().executeQuery("SELECT question_id, subject, question_text, answer_text, asked_at, answered_at " + "FROM Customer_Question WHERE cust_id=" + customerId + " ORDER BY asked_at DESC");
-                    while (resultSet.next()) {
-                        String answerText = resultSet.getString("answer_text");
-                        String answeredAt = resultSet.getString("answered_at");
-                        String displayAnswer;
-                        if (answerText != null){
-                            displayAnswer = answerText;
-                        }
-                        else{
-                            displayAnswer = "(awaiting reply)";
-                        }
-                        String displayAnsweredAt;
-                        if (answeredAt != null){
-                            displayAnsweredAt = answeredAt;
-                        }
-                        else{
-                            displayAnsweredAt = "—";
-                        }
-                        questionsModel.addRow(new Object[]{resultSet.getInt("question_id"), resultSet.getString("subject"), resultSet.getString("question_text"), displayAnswer, resultSet.getString("asked_at"), displayAnsweredAt
-                        });
-                    }
-                }
-                catch (SQLException ex) {
-                    postMessageLabel.setText("Error: " + ex.getMessage());
-                }
-            }
-        });
-        return loadQuestionsButton;
-    }
-
-    private JButton getJButton(JTextField subjectField, JTextArea questionArea, JLabel postMessageLabel) {
+    private JButton getJButton(JTextArea questionArea, JLabel postMessageLabel) {
         JButton postButton = new JButton("Post Question");
 
         postButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                String subject = subjectField.getText().trim();
                 String questionText = questionArea.getText().trim();
                 if (questionText.isEmpty()) {
                     postMessageLabel.setText("Please enter a question.");
                     return; }
                 try {
-                    DBConnection.getStatement().executeUpdate("INSERT INTO Customer_Question (cust_id, subject, question_text, asked_at) " + "VALUES (" + customerId + ",'" + subject.replace("'", "''") + "','" + questionText.replace("'", "''") + "',NOW())");
+                    DBConnection.getStatement().executeUpdate("INSERT INTO Customer_Question (cust_id, question_text, asked_at) " + "VALUES (" + customerId + ",'" + questionText.replace("'", "''") + "',NOW())");
                     postMessageLabel.setForeground(new Color(0, 120, 0));
                     postMessageLabel.setText("Question posted!");
-                    subjectField.setText("");
                     questionArea.setText("");
                 }
                 catch (SQLException ex) {

@@ -10,7 +10,7 @@ public class SalesReportTab {
         JTextField yearField = new JTextField(6);
         JComboBox<String> monthCombo = new JComboBox<>(new String[]{"01 - January", "02 - February", "03 - March", "04 - April", "05 - May", "06 - June", "07 - July", "08 - August", "09 - September", "10 - October", "11 - November", "12 - December"});
         yearField.setText(String.valueOf(java.time.LocalDate.now().getYear()));
-        String[] columns = {"Ticket #", "Customer", "Flight", "Date", "Class", "Fare", "Booking Fee", "Total"};
+        String[] columns = {"Ticket #", "Customer", "Flight", "Date", "Class", "Total"};
         DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
@@ -27,7 +27,7 @@ public class SalesReportTab {
                 tableModel.setRowCount(0);
                 String year = yearField.getText().trim();
                 String month = monthCombo.getSelectedItem().toString().substring(0, 2);
-                String query = "SELECT t.ticket_no, c.name AS cust_name, tf.flight_no, tf.dep_date, " + "tf.class, t.total_fare, t.booking_fee, " + "(t.total_fare + t.booking_fee) AS grand_total " + "FROM Ticket t " + "JOIN Customer c ON t.cust_id = c.cust_id " + "JOIN Ticket_Flight tf ON t.ticket_no = tf.ticket_no AND tf.leg_order=1 " + "WHERE t.status != 'cancelled' " + "AND YEAR(t.purchase_date)=" + year + " AND MONTH(t.purchase_date)=" + month + " ORDER BY t.purchase_date";
+                String query = "SELECT t.ticket_no, c.name AS cust_name, tf.flight_no, tf.dep_date, " + "tf.class, " + "(t.total_fare + t.booking_fee) AS grand_total " + "FROM Ticket t " + "JOIN Customer c ON t.cust_id = c.cust_id " + "JOIN Ticket_Flight tf ON t.ticket_no = tf.ticket_no AND tf.leg_order=1 " + "WHERE t.status != 'cancelled' " + "AND YEAR(t.purchase_date)=" + year + " AND MONTH(t.purchase_date)=" + month + " ORDER BY t.purchase_date";
                 try {
                     ResultSet rs = DBConnection.getStatement().executeQuery(query);
                     double totalRevenue = 0;
@@ -36,7 +36,7 @@ public class SalesReportTab {
                         double grandTotal = rs.getDouble("grand_total");
                         totalRevenue += grandTotal;
                         count++;
-                        tableModel.addRow(new Object[]{rs.getInt("ticket_no"), rs.getString("cust_name"), rs.getString("flight_no"), rs.getString("dep_date"), rs.getString("class"), "$" + rs.getString("total_fare"), "$" + rs.getString("booking_fee"), "$" + String.format("%.2f", grandTotal)});
+                        tableModel.addRow(new Object[]{rs.getInt("ticket_no"), rs.getString("cust_name"), rs.getString("flight_no"), rs.getString("dep_date"), rs.getString("class"), "$" + String.format("%.2f", grandTotal)});
                     }
                     summaryLabel.setText(String.format("%d ticket(s)  |  Total Revenue: $%.2f", count, totalRevenue));
                 }

@@ -20,6 +20,7 @@ public class AdminFrame extends JFrame {
         tabs.addTab("Revenue Summary", RevenueSummaryTab.build());
         tabs.addTab("Top Customers", TopCustomersTab.build());
         tabs.addTab("Active Flights", ActiveFlightsTab.build());
+        tabs.addTab("Flights by Airport", FlightsByAirportTab.build());
         this.add(tabs);
         this.setTitle("Admin Dashboard  —  " + empName);
         this.setSize(950, 620);

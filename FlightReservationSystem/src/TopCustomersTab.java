@@ -9,7 +9,7 @@ public class TopCustomersTab {
     public static JPanel build() {
         JTextField limitField = new JTextField("10", 5);
 
-        String[] columns = {"Rank", "Customer Name", "Email", "Tickets", "Total Spent"};
+        String[] columns = {"Rank", "Customer Name", "Email", "Total Spent"};
         DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
@@ -31,12 +31,12 @@ public class TopCustomersTab {
                 catch (NumberFormatException ex) {
                     limit = "10";
                 }
-                String query = "SELECT c.name, c.email, " + "COUNT(DISTINCT t.ticket_no) AS tickets, " + "SUM(t.total_fare + t.booking_fee) AS total_spent " + "FROM Customer c " + "JOIN Ticket t ON c.cust_id=t.cust_id " + "WHERE t.status != 'cancelled' " + "GROUP BY c.cust_id " + "ORDER BY total_spent DESC " + "LIMIT " + limit;
+                String query = "SELECT c.name, c.email, " + "SUM(t.total_fare + t.booking_fee) AS total_spent " + "FROM Customer c " + "JOIN Ticket t ON c.cust_id=t.cust_id " + "WHERE t.status != 'cancelled' " + "GROUP BY c.cust_id " + "ORDER BY total_spent DESC " + "LIMIT " + limit;
                 try {
                     ResultSet rs = DBConnection.getStatement().executeQuery(query);
                     int rank = 1;
                     while (rs.next()) {
-                        tableModel.addRow(new Object[]{rank++, rs.getString("name"), rs.getString("email"), rs.getInt("tickets"), "$" + String.format("%.2f", rs.getDouble("total_spent"))});
+                        tableModel.addRow(new Object[]{rank++, rs.getString("name"), rs.getString("email"), "$" + String.format("%.2f", rs.getDouble("total_spent"))});
                     }
                     messageLabel.setText("Top " + (rank - 1) + " customer(s) by total revenue.");
                 }
