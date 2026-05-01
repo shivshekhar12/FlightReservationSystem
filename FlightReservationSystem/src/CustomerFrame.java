@@ -44,7 +44,9 @@ public class CustomerFrame extends JFrame {
         final JTextField airlineFilterField = new JTextField(5);
         final String[] columns = {"Flight", "Airline", "From", "To", "Depart", "Arrive", "Duration", "Economy $", "Business $", "First $", "Stops"};
         final DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
-            public boolean isCellEditable(int row, int col) { return false; }
+            public boolean isCellEditable(int row, int col) {
+                return false;
+            }
         };
         final JTable resultsTable = new JTable(tableModel);
         resultsTable.setRowHeight(22);
