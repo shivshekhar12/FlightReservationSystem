@@ -7,16 +7,16 @@ import javax.swing.table.*;
 public class ManageFlightsTab {
 
     public static JPanel build(JFrame parentFrame) {
-        String[] columns = {"Flight No", "Airline", "Aircraft", "From", "To", "Depart", "Arrive", "Intl", "Economy $", "Business $", "First $", "Stops"};
-        DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
+        String[] flightColumnNames = {"Flight No", "Airline", "Aircraft", "From", "To", "Depart", "Arrive", "Intl", "Economy $", "Business $", "First $", "Stops"};
+        DefaultTableModel flightTableModel = new DefaultTableModel(flightColumnNames, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
             }
         };
-        JTable flightsTable = new JTable(tableModel);
+        JTable flightsTable = new JTable(flightTableModel);
         flightsTable.setRowHeight(22);
         flightsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JLabel messageLabel = new JLabel(" ");
+        JLabel statusLabel = new JLabel(" ");
 
         JButton loadButton = new JButton("Load All Flights");
         JButton addButton = new JButton("Add Flight");
@@ -26,38 +26,38 @@ public class ManageFlightsTab {
 
         loadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                loadAllFlights(tableModel, messageLabel);
+                loadAllFlights(flightTableModel, statusLabel);
             }
         });
 
         addButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                showFlightDialog(parentFrame, null, null, tableModel, messageLabel);
+                showFlightDialog(parentFrame, null, null, flightTableModel, statusLabel);
             }
         });
 
         editButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = flightsTable.getSelectedRow();
-                if (selectedRow < 0) {
-                    messageLabel.setText("Select a flight to edit.");
+                int row = flightsTable.getSelectedRow();
+                if (row < 0) {
+                    statusLabel.setText("Select a flight to edit.");
                     return;
                 }
-                String flightNo = (String) tableModel.getValueAt(selectedRow, 0);
-                String airlineId = (String) tableModel.getValueAt(selectedRow, 1);
-                showFlightDialog(parentFrame, flightNo, airlineId, tableModel, messageLabel);
+                String flightNo = (String) flightTableModel.getValueAt(row, 0);
+                String airlineId = (String) flightTableModel.getValueAt(row, 1);
+                showFlightDialog(parentFrame, flightNo, airlineId, flightTableModel, statusLabel);
             }
         });
 
         deleteButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = flightsTable.getSelectedRow();
-                if (selectedRow < 0) {
-                    messageLabel.setText("Select a flight to delete.");
+                int row = flightsTable.getSelectedRow();
+                if (row < 0) {
+                    statusLabel.setText("Select a flight to delete.");
                     return;
                 }
-                String flightNo  = (String) tableModel.getValueAt(selectedRow, 0);
-                String airlineId = (String) tableModel.getValueAt(selectedRow, 1);
+                String flightNo  = (String) flightTableModel.getValueAt(row, 0);
+                String airlineId = (String) flightTableModel.getValueAt(row, 1);
                 int confirm = JOptionPane.showConfirmDialog(parentFrame, "Delete flight " + airlineId + flightNo + "?", "Confirm", JOptionPane.YES_NO_OPTION);
                 if (confirm != JOptionPane.YES_OPTION) {
                     return;
@@ -65,71 +65,78 @@ public class ManageFlightsTab {
                 try {
                     DBConnection.getStatement().executeUpdate("DELETE FROM Flight_Day WHERE flight_no='" + flightNo + "' AND airline_id='" + airlineId + "'");
                     DBConnection.getStatement().executeUpdate("DELETE FROM Flight WHERE flight_no='" + flightNo + "' AND airline_id='" + airlineId + "'");
-                    messageLabel.setForeground(new Color(0, 120, 0));
-                    messageLabel.setText("Flight deleted.");
-                    loadAllFlights(tableModel, messageLabel);
+                    statusLabel.setForeground(new Color(0, 120, 0));
+                    statusLabel.setText("Flight deleted.");
+                    loadAllFlights(flightTableModel, statusLabel);
                 }
                 catch (SQLException ex) {
-                    messageLabel.setText("Error: " + ex.getMessage());
+                    statusLabel.setText("Error: " + ex.getMessage());
                 }
             }
         });
 
-        loadAllFlights(tableModel, messageLabel);
+        loadAllFlights(flightTableModel, statusLabel);
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
-        topPanel.add(loadButton); topPanel.add(addButton);
-        topPanel.add(editButton); topPanel.add(deleteButton);
+        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        actionButtonPanel.add(loadButton); actionButtonPanel.add(addButton);
+        actionButtonPanel.add(editButton); actionButtonPanel.add(deleteButton);
 
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(actionButtonPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(flightsTable), BorderLayout.CENTER);
-        panel.add(messageLabel, BorderLayout.SOUTH);
+        panel.add(statusLabel, BorderLayout.SOUTH);
         return panel;
     }
 
-    static void loadAllFlights(DefaultTableModel tableModel, JLabel messageLabel) {
-        tableModel.setRowCount(0);
+    static void loadAllFlights(DefaultTableModel model, JLabel status) {
+        model.setRowCount(0);
         try {
-            ResultSet rs = DBConnection.getStatement().executeQuery("SELECT flight_no, airline_id, aircraft_id, dep_airport_id, arr_airport_id, " + "dep_time, arr_time, is_international, " + "base_economy_fare, base_business_fare, base_first_fare, stops FROM Flight ORDER BY airline_id, flight_no");
-            while (rs.next()) {
+            ResultSet flightData = DBConnection.getStatement().executeQuery("SELECT flight_no, airline_id, aircraft_id, dep_airport_id, arr_airport_id, " + "dep_time, arr_time, is_international, " + "base_economy_fare, base_business_fare, base_first_fare, stops FROM Flight ORDER BY airline_id, flight_no");
+            while (flightData.next()) {
                 String isIntl;
-                if (rs.getBoolean("is_international")) {
+                if (flightData.getBoolean("is_international")) {
                     isIntl = "Yes";
                 }
                 else {
                     isIntl = "No";
                 }
-                tableModel.addRow(new Object[]{rs.getString("flight_no"), rs.getString("airline_id"), rs.getInt("aircraft_id"), rs.getString("dep_airport_id"), rs.getString("arr_airport_id"), rs.getString("dep_time"), rs.getString("arr_time"), isIntl, "$" + rs.getString("base_economy_fare"), "$" + rs.getString("base_business_fare"), "$" + rs.getString("base_first_fare"), rs.getInt("stops")});
+                model.addRow(new Object[]{flightData.getString("flight_no"),
+                        flightData.getString("airline_id"),
+                        flightData.getInt("aircraft_id"),
+                        flightData.getString("dep_airport_id"),
+                        flightData.getString("arr_airport_id"),
+                        flightData.getString("dep_time"),
+                        flightData.getString("arr_time"), isIntl, "$" + flightData.getString("base_economy_fare"), "$" + flightData.getString("base_business_fare"), "$" + flightData.getString("base_first_fare"),
+                        flightData.getInt("stops")});
             }
-            messageLabel.setText(tableModel.getRowCount() + " flight(s) loaded.");
+            status.setText(model.getRowCount() + " flight(s) loaded.");
         }
         catch (SQLException ex) {
-            messageLabel.setText("Error: " + ex.getMessage());
+            status.setText("Error: " + ex.getMessage());
         }
     }
 
-    static void showFlightDialog(JFrame parentFrame, String flightNo, String airlineId, DefaultTableModel tableModel, JLabel messageLabel) {
+    static void showFlightDialog(JFrame parentFrame, String flightNo, String airlineId, DefaultTableModel model, JLabel status) {
         boolean isEdit = (flightNo != null);
 
-        String flightNoValue;
+        String initFlightNo;
         if (flightNo != null) {
-            flightNoValue = flightNo;
+            initFlightNo = flightNo;
         }
         else {
-            flightNoValue = "";
+            initFlightNo = "";
         }
-        String airlineValue;
+        String initAirline;
         if (airlineId != null) {
-            airlineValue = airlineId;
+            initAirline = airlineId;
         }
         else {
-            airlineValue = "";
+            initAirline = "";
         }
 
-        JTextField flightNoField = new JTextField(flightNoValue, 8);
-        JTextField airlineField = new JTextField(airlineValue, 4);
+        JTextField flightNoField = new JTextField(initFlightNo, 8);
+        JTextField airlineField = new JTextField(initAirline, 4);
         JTextField aircraftField = new JTextField(8);
         JTextField fromField = new JTextField(4);
         JTextField toField = new JTextField(4);
@@ -146,43 +153,54 @@ public class ManageFlightsTab {
             flightNoField.setEditable(false);
             airlineField.setEditable(false);
             try {
-                ResultSet rs = DBConnection.getStatement().executeQuery("SELECT * FROM Flight WHERE flight_no='" + flightNo + "' AND airline_id='" + airlineId + "'");
-                if (rs.next()) {
-                    aircraftField.setText(String.valueOf(rs.getInt("aircraft_id")));
-                    fromField.setText(rs.getString("dep_airport_id"));
-                    toField.setText(rs.getString("arr_airport_id"));
-                    depTimeField.setText(rs.getString("dep_time"));
-                    arrTimeField.setText(rs.getString("arr_time"));
-                    intlCheckBox.setSelected(rs.getBoolean("is_international"));
-                    ecoFareField.setText(rs.getString("base_economy_fare"));
-                    bizFareField.setText(rs.getString("base_business_fare"));
-                    fstFareField.setText(rs.getString("base_first_fare"));
-                    stopsField.setText(String.valueOf(rs.getInt("stops")));
+                ResultSet flightData = DBConnection.getStatement().executeQuery("SELECT * FROM Flight WHERE flight_no='" + flightNo + "' AND airline_id='" + airlineId + "'");
+                if (flightData.next()) {
+                    aircraftField.setText(String.valueOf(flightData.getInt("aircraft_id")));
+                    fromField.setText(flightData.getString("dep_airport_id"));
+                    toField.setText(flightData.getString("arr_airport_id"));
+                    depTimeField.setText(flightData.getString("dep_time"));
+                    arrTimeField.setText(flightData.getString("arr_time"));
+                    intlCheckBox.setSelected(flightData.getBoolean("is_international"));
+                    ecoFareField.setText(flightData.getString("base_economy_fare"));
+                    bizFareField.setText(flightData.getString("base_business_fare"));
+                    fstFareField.setText(flightData.getString("base_first_fare"));
+                    stopsField.setText(String.valueOf(flightData.getInt("stops")));
                 }
-                ResultSet daysResult = DBConnection.getStatement().executeQuery("SELECT GROUP_CONCAT(day_of_week) AS days FROM Flight_Day " + "WHERE flight_no='" + flightNo + "' AND airline_id='" + airlineId + "'");
-                if (daysResult.next()) {
-                    daysField.setText(daysResult.getString("days"));
+                ResultSet flightDaysResult = DBConnection.getStatement().executeQuery("SELECT GROUP_CONCAT(day_of_week) AS days FROM Flight_Day " + "WHERE flight_no='" + flightNo + "' AND airline_id='" + airlineId + "'");
+                if (flightDaysResult.next()) {
+                    daysField.setText(flightDaysResult.getString("days"));
                 }
             }
             catch (SQLException ex) {
-                messageLabel.setText("Error loading flight: " + ex.getMessage());
+                status.setText("Error loading flight: " + ex.getMessage());
                 return;
             }
         }
 
-        Object[] fields = {"Flight No:", flightNoField, "Airline ID:", airlineField, "Aircraft ID:", aircraftField, "From Airport:", fromField, "To Airport:", toField, "Dep Time (HH:MM):", depTimeField, "Arr Time (HH:MM):", arrTimeField, intlCheckBox, "Economy Fare:", ecoFareField, "Business Fare:", bizFareField, "First Fare:", fstFareField, "Stops:", stopsField, "Days (comma-sep, e.g. Mon,Wed,Fri):", daysField
+        Object[] flightDialogComponents = {"Flight No:", flightNoField,
+                "Airline ID:", airlineField,
+                "Aircraft ID:", aircraftField,
+                "From Airport:", fromField,
+                "To Airport:", toField,
+                "Dep Time (HH:MM):", depTimeField,
+                "Arr Time (HH:MM):", arrTimeField, intlCheckBox,
+                "Economy Fare:", ecoFareField,
+                "Business Fare:", bizFareField,
+                "First Fare:", fstFareField,
+                "Stops:", stopsField,
+                "Days (comma-sep, e.g. Mon,Wed,Fri):", daysField
         };
 
-        String dialogTitle;
+        String title;
         if (isEdit) {
-            dialogTitle = "Edit Flight";
+            title = "Edit Flight";
         }
         else {
-            dialogTitle = "Add Flight";
+            title = "Add Flight";
         }
 
-        int dialogResult = JOptionPane.showConfirmDialog(parentFrame, fields, dialogTitle, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (dialogResult != JOptionPane.OK_OPTION) {
+        int dialogResponse = JOptionPane.showConfirmDialog(parentFrame, flightDialogComponents, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (dialogResponse != JOptionPane.OK_OPTION) {
             return;
         }
 
@@ -200,9 +218,9 @@ public class ManageFlightsTab {
             String fst = fstFareField.getText().trim();
             String stops = stopsField.getText().trim();
             String[] days = daysField.getText().trim().split(",");
-
             if (isEdit) {
-                DBConnection.getStatement().executeUpdate("UPDATE Flight SET aircraft_id=" + ac + ", dep_airport_id='" + from + "', arr_airport_id='" + to + "', dep_time='" + dep + "', arr_time='" + arr + "', is_international=" + intl + ", base_economy_fare=" + eco + ", base_business_fare=" + biz + ", base_first_fare=" + fst + ", stops=" + stops + " WHERE flight_no='" + fn + "' AND airline_id='" + al + "'");
+                DBConnection.getStatement().executeUpdate("UPDATE Flight SET aircraft_id=" + ac + ", dep_airport_id='" + from + "', arr_airport_id='" + to + "', dep_time='" + dep + "', arr_time='"
+                        + arr + "', is_international=" + intl + ", base_economy_fare=" + eco + ", base_business_fare=" + biz + ", base_first_fare=" + fst + ", stops=" + stops + " WHERE flight_no='" + fn + "' AND airline_id='" + al + "'");
                 DBConnection.getStatement().executeUpdate("DELETE FROM Flight_Day WHERE flight_no='" + fn + "' AND airline_id='" + al + "'");
             }
             else {
@@ -214,17 +232,17 @@ public class ManageFlightsTab {
                     DBConnection.getStatement().executeUpdate("INSERT INTO Flight_Day (flight_no,airline_id,day_of_week) VALUES ('" + fn + "','" + al + "','" + d + "')");
                 }
             }
-            messageLabel.setForeground(new Color(0, 120, 0));
+            status.setForeground(new Color(0, 120, 0));
             if (isEdit) {
-                messageLabel.setText("Flight updated.");
+                status.setText("Flight updated.");
             }
             else {
-                messageLabel.setText("Flight added.");
+                status.setText("Flight added.");
             }
-            loadAllFlights(tableModel, messageLabel);
+            loadAllFlights(model, status);
         }
         catch (SQLException ex) {
-            messageLabel.setText("Error: " + ex.getMessage());
+            status.setText("Error: " + ex.getMessage());
         }
     }
 }

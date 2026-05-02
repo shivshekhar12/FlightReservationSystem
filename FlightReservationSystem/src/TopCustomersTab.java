@@ -9,13 +9,13 @@ public class TopCustomersTab {
     public static JPanel build() {
         JTextField limitField = new JTextField("10", 5);
 
-        String[] columns = {"Rank", "Customer Name", "Email", "Total Spent"};
-        DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
+        String[] headerTitles = {"Rank", "Customer Name", "Email", "Total Spent"};
+        DefaultTableModel customerTableModel = new DefaultTableModel(headerTitles, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
             }
         };
-        JTable topCustomersTable = new JTable(tableModel);
+        JTable topCustomersTable = new JTable(customerTableModel);
         topCustomersTable.setRowHeight(22);
 
         JLabel messageLabel = new JLabel(" ");
@@ -23,7 +23,7 @@ public class TopCustomersTab {
         JButton loadButton = new JButton("Load");
         loadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                tableModel.setRowCount(0);
+                customerTableModel.setRowCount(0);
                 String limit = limitField.getText().trim();
                 try {
                     Integer.parseInt(limit);
@@ -31,12 +31,13 @@ public class TopCustomersTab {
                 catch (NumberFormatException ex) {
                     limit = "10";
                 }
-                String query = "SELECT c.name, c.email, " + "SUM(t.total_fare + t.booking_fee) AS total_spent " + "FROM Customer c " + "JOIN Ticket t ON c.cust_id=t.cust_id " + "WHERE t.status != 'cancelled' " + "GROUP BY c.cust_id " + "ORDER BY total_spent DESC " + "LIMIT " + limit;
+                String query = "SELECT c.name, c.email, " + "SUM(t.total_fare + t.booking_fee) AS total_spent " + "FROM Customer c " + "JOIN Ticket t ON c.cust_id=t.cust_id "
+                        + "WHERE t.status != 'cancelled' " + "GROUP BY c.cust_id " + "ORDER BY total_spent DESC " + "LIMIT " + limit;
                 try {
-                    ResultSet rs = DBConnection.getStatement().executeQuery(query);
+                    ResultSet customerResults = DBConnection.getStatement().executeQuery(query);
                     int rank = 1;
-                    while (rs.next()) {
-                        tableModel.addRow(new Object[]{rank++, rs.getString("name"), rs.getString("email"), "$" + String.format("%.2f", rs.getDouble("total_spent"))});
+                    while (customerResults.next()) {
+                        customerTableModel.addRow(new Object[]{rank++, customerResults.getString("name"), customerResults.getString("email"), "$" + String.format("%.2f", customerResults.getDouble("total_spent"))});
                     }
                     messageLabel.setText("Top " + (rank - 1) + " customer(s) by total revenue.");
                 }
@@ -46,13 +47,13 @@ public class TopCustomersTab {
             }
         });
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
-        topPanel.add(new JLabel("Show top:"));
-        topPanel.add(limitField);
-        topPanel.add(loadButton);
+        JPanel topCustomersPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        topCustomersPanel.add(new JLabel("Show top:"));
+        topCustomersPanel.add(limitField);
+        topCustomersPanel.add(loadButton);
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(topCustomersPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(topCustomersTable), BorderLayout.CENTER);
         panel.add(messageLabel, BorderLayout.SOUTH);
         return panel;

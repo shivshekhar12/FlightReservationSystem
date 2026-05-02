@@ -12,50 +12,50 @@ public class BookForCustomerTab {
         Map<String, Integer> customerMap = new HashMap<>();
         JTextField customerSearchField = new JTextField(20);
         JComboBox<String> customerCombo = new JComboBox<>();
-        JButton findCustomerButton = getJButton(customerCombo, customerMap, customerSearchField);
+        JButton findCustomerButton = buildCustomerSearchButton(customerCombo, customerMap, customerSearchField);
         JTextField fromField = new JTextField(6);
         JTextField toField = new JTextField(6);
         JTextField dateField = new JTextField(12);
         JComboBox<String> tripTypeCombo = new JComboBox<>(new String[]{"One-Way", "Round-Trip"});
         JTextField returnDateField = new JTextField(12);
-        String[] columns = {"Flight", "Airline", "From", "To", "Depart", "Arrive", "Economy $", "Business $", "First $"};
-        DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
+        String[] flightColumns = {"Flight", "Airline", "From", "To", "Depart", "Arrive", "Economy $", "Business $", "First $"};
+        DefaultTableModel flightsDataModel = new DefaultTableModel(flightColumns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
             }
         };
-        JTable flightsTable = new JTable(tableModel);
+        JTable flightsTable = new JTable(flightsDataModel);
         flightsTable.setRowHeight(22);
         flightsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JLabel messageLabel = new JLabel(" ");
+        JLabel statusLabel = new JLabel(" ");
         JButton searchButton = new JButton("Search Flights");
         searchButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                tableModel.setRowCount(0);
+                flightsDataModel.setRowCount(0);
                 String from = fromField.getText().trim().toUpperCase();
                 String to = toField.getText().trim().toUpperCase();
                 String date = dateField.getText().trim();
                 if (from.isEmpty() || to.isEmpty() || date.isEmpty()) {
-                    messageLabel.setText("From, To and Date are required.");
+                    statusLabel.setText("From, To and Date are required.");
                     return;
                 }
                 String query = "SELECT f.flight_no, f.airline_id, f.dep_airport_id, f.arr_airport_id, " + "f.dep_time, f.arr_time, " + "f.base_economy_fare, f.base_business_fare, f.base_first_fare " + "FROM Flight f " + "JOIN Flight_Day fd ON f.flight_no=fd.flight_no AND f.airline_id=fd.airline_id " + "WHERE f.dep_airport_id='" + from + "' AND f.arr_airport_id='" + to + "' " + "AND fd.day_of_week = DAYNAME('" + date + "') " + "ORDER BY f.dep_time";
                 try {
-                    ResultSet rs = DBConnection.getStatement().executeQuery(query);
+                    ResultSet flightData = DBConnection.getStatement().executeQuery(query);
                     int count = 0;
-                    while (rs.next()) {
-                        tableModel.addRow(new Object[]{rs.getString("flight_no"), rs.getString("airline_id"), rs.getString("dep_airport_id"), rs.getString("arr_airport_id"), rs.getString("dep_time"), rs.getString("arr_time"), "$" + rs.getString("base_economy_fare"), "$" + rs.getString("base_business_fare"), "$" + rs.getString("base_first_fare")});
+                    while (flightData.next()) {
+                        flightsDataModel.addRow(new Object[]{flightData.getString("flight_no"), flightData.getString("airline_id"), flightData.getString("dep_airport_id"), flightData.getString("arr_airport_id"), flightData.getString("dep_time"), flightData.getString("arr_time"), "$" + flightData.getString("base_economy_fare"), "$" + flightData.getString("base_business_fare"), "$" + flightData.getString("base_first_fare")});
                         count++;
                     }
                     if (count == 0) {
-                        messageLabel.setText("No flights found.");
+                        statusLabel.setText("No flights found.");
                     }
                     else {
-                        messageLabel.setText(count + " flight(s) found.");
+                        statusLabel.setText(count + " flight(s) found.");
                     }
                 }
                 catch (SQLException ex) {
-                    messageLabel.setText("Error: " + ex.getMessage());
+                    statusLabel.setText("Error: " + ex.getMessage());
                 }
             }
         });
@@ -63,23 +63,23 @@ public class BookForCustomerTab {
         JButton bookButton = new JButton("Book Selected for Customer");
         bookButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = flightsTable.getSelectedRow();
-                if (selectedRow < 0) {
-                    messageLabel.setText("Select a flight first.");
+                int row = flightsTable.getSelectedRow();
+                if (row < 0) {
+                    statusLabel.setText("Select a flight first.");
                     return;
                 }
                 String selectedCustomer = (String) customerCombo.getSelectedItem();
                 if (selectedCustomer == null || !customerMap.containsKey(selectedCustomer)) {
-                    messageLabel.setText("Select a valid customer first.");
+                    statusLabel.setText("Select a valid customer first.");
                     return;
                 }
                 int custId = customerMap.get(selectedCustomer);
-                String flightNo = (String) tableModel.getValueAt(selectedRow, 0);
-                String airlineId = (String) tableModel.getValueAt(selectedRow, 1);
+                String flightNo = (String) flightsDataModel.getValueAt(row, 0);
+                String airlineId = (String) flightsDataModel.getValueAt(row, 1);
                 String date = dateField.getText().trim();
                 String tripType = tripTypeCombo.getSelectedItem().toString();
                 String returnDate = returnDateField.getText().trim();
-                doRepBooking(parentFrame, empId, custId, flightNo, airlineId, date, tripType, returnDate, messageLabel);
+                doRepBooking(parentFrame, empId, custId, flightNo, airlineId, date, tripType, returnDate, statusLabel);
             }
         });
 
@@ -102,21 +102,21 @@ public class BookForCustomerTab {
         searchPanel.add(new JLabel("Return:"));
         searchPanel.add(returnDateField);
         searchPanel.add(searchButton);
-        JPanel northWrapper = new JPanel(new GridLayout(2, 1));
-        northWrapper.add(customerPanel);
-        northWrapper.add(searchPanel);
+        JPanel bookPanel = new JPanel(new GridLayout(2, 1));
+        bookPanel.add(customerPanel);
+        bookPanel.add(searchPanel);
         JPanel southPanel = new JPanel(new BorderLayout(5, 5));
-        southPanel.add(messageLabel, BorderLayout.WEST);
+        southPanel.add(statusLabel, BorderLayout.WEST);
         southPanel.add(bookButton, BorderLayout.EAST);
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(northWrapper, BorderLayout.NORTH);
+        panel.add(bookPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(flightsTable), BorderLayout.CENTER);
         panel.add(southPanel, BorderLayout.SOUTH);
         return panel;
     }
 
-    private static JButton getJButton(JComboBox<String> customerCombo, Map<String, Integer> customerMap, JTextField customerSearchField) {
+    private static JButton buildCustomerSearchButton(JComboBox<String> customerCombo, Map<String, Integer> customerMap, JTextField customerSearchField) {
         JButton findCustomerButton = new JButton("Find Customer");
         findCustomerButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -124,11 +124,11 @@ public class BookForCustomerTab {
                 customerMap.clear();
                 String searchText = customerSearchField.getText().trim();
                 try {
-                    ResultSet rs = DBConnection.getStatement().executeQuery("SELECT cust_id, name, email FROM Customer WHERE name LIKE '%" + searchText + "%' ORDER BY name");
-                    while (rs.next()) {
-                        String label = rs.getString("name") + " (" + rs.getString("email") + ")";
-                        customerMap.put(label, rs.getInt("cust_id"));
-                        customerCombo.addItem(label);
+                    ResultSet customerResults = DBConnection.getStatement().executeQuery("SELECT cust_id, name, email FROM Customer WHERE name LIKE '%" + searchText + "%' ORDER BY name");
+                    while (customerResults.next()) {
+                        String customerLabel = customerResults.getString("name") + " (" + customerResults.getString("email") + ")";
+                        customerMap.put(customerLabel, customerResults.getInt("cust_id"));
+                        customerCombo.addItem(customerLabel);
                     }
                     if (customerCombo.getItemCount() == 0) {
                         customerCombo.addItem("No customers found");
@@ -142,14 +142,14 @@ public class BookForCustomerTab {
         return findCustomerButton;
     }
 
-    private static void doRepBooking(JFrame parentFrame, int empId, int custId, String flightNo, String airlineId, String depDate, String tripType, String returnDate, JLabel messageLabel) {
+    private static void doRepBooking(JFrame parentFrame, int empId, int custId, String flightNo, String airlineId, String depDate, String tripType, String returnDate, JLabel statusLabel) {
         JComboBox<String> classCombo = new JComboBox<>(new String[]{"economy", "business", "first"});
         JTextField seatField = new JTextField(6);
         JTextField mealField = new JTextField(10);
 
-        Object[] fields = {"Class:", classCombo, "Seat No:", seatField, "Meal Pref:", mealField};
-        int dialogResult = JOptionPane.showConfirmDialog(parentFrame, fields, "Book " + airlineId + flightNo + " for customer", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (dialogResult != JOptionPane.OK_OPTION) {
+        Object[] bookingFields = {"Class:", classCombo, "Seat No:", seatField, "Meal Pref:", mealField};
+        int confirmDialog = JOptionPane.showConfirmDialog(parentFrame, bookingFields, "Book " + airlineId + flightNo + " for customer", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (confirmDialog != JOptionPane.OK_OPTION) {
             return;
         }
         String selectedClass = classCombo.getSelectedItem().toString();
@@ -180,16 +180,18 @@ public class BookForCustomerTab {
                 ticketNo = keyResult.getInt("id");
             }
 
-            DBConnection.getStatement().executeUpdate("INSERT INTO Ticket_Flight (ticket_no,leg_order,flight_no,airline_id,dep_date,seat_no,class,meal_pref) " + "VALUES (" + ticketNo + ",1,'" + flightNo + "','" + airlineId + "','" + depDate + "','" + seatNumber + "','" + selectedClass + "','" + mealPref + "')");
+            DBConnection.getStatement().executeUpdate("INSERT INTO Ticket_Flight (ticket_no,leg_order,flight_no,airline_id,dep_date,seat_no,class,meal_pref) "
+                    + "VALUES (" + ticketNo + ",1,'" + flightNo + "','" + airlineId + "','" + depDate + "','" + seatNumber + "','" + selectedClass + "','" + mealPref + "')");
 
             if (ticketType.equals("round_trip") && !returnDate.isEmpty()) {
-                DBConnection.getStatement().executeUpdate("INSERT INTO Ticket_Flight (ticket_no,leg_order,flight_no,airline_id,dep_date,seat_no,class,meal_pref) " + "VALUES (" + ticketNo + ",2,'" + flightNo + "','" + airlineId + "','" + returnDate + "','" + seatNumber + "','" + selectedClass + "','" + mealPref + "')");
+                DBConnection.getStatement().executeUpdate("INSERT INTO Ticket_Flight (ticket_no,leg_order,flight_no,airline_id,dep_date,seat_no,class,meal_pref) "
+                        + "VALUES (" + ticketNo + ",2,'" + flightNo + "','" + airlineId + "','" + returnDate + "','" + seatNumber + "','" + selectedClass + "','" + mealPref + "')");
             }
-            messageLabel.setForeground(new Color(0, 120, 0));
-            messageLabel.setText("Booked! Ticket #" + ticketNo + " | " + selectedClass + " | $" + (fare + bookingFee));
+            statusLabel.setForeground(new Color(0, 120, 0));
+            statusLabel.setText("Booked! Ticket #" + ticketNo + " | " + selectedClass + " | $" + (fare + bookingFee));
         }
         catch (SQLException ex) {
-            messageLabel.setText("Booking error: " + ex.getMessage());
+            statusLabel.setText("Booking error: " + ex.getMessage());
         }
     }
 }

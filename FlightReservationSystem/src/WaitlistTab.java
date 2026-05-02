@@ -10,19 +10,19 @@ public class WaitlistTab {
         JTextField flightNoField = new JTextField(10);
         JTextField airlineField = new JTextField(4);
         JTextField dateField = new JTextField(12);
-        String[] columns = {"Position", "Customer ID", "Customer Name", "Email", "Requested", "Notified"};
-        DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
+        String[] waitlistColumns = {"Position", "Customer ID", "Customer Name", "Email", "Requested", "Notified"};
+        DefaultTableModel waitlistTableModel = new DefaultTableModel(waitlistColumns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
             }
         };
-        JTable waitlistTable = new JTable(tableModel);
+        JTable waitlistTable = new JTable(waitlistTableModel);
         waitlistTable.setRowHeight(22);
         JLabel messageLabel = new JLabel(" ");
         JButton loadButton = new JButton("Load Waitlist");
         loadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                tableModel.setRowCount(0);
+                waitlistTableModel.setRowCount(0);
                 String flightNo = flightNoField.getText().trim();
                 String airlineId = airlineField.getText().trim().toUpperCase();
                 String date = dateField.getText().trim();
@@ -31,17 +31,18 @@ public class WaitlistTab {
                     return;
                 }
                 try {
-                    ResultSet rs = DBConnection.getStatement().executeQuery("SELECT w.position, w.cust_id, c.name, c.email, w.join_date, w.notified " + "FROM Waitlist w JOIN Customer c ON w.cust_id=c.cust_id " + "WHERE w.flight_no='" + flightNo + "' AND w.airline_id='" + airlineId + "' AND w.dep_date='" + date + "' ORDER BY w.position");
+                    ResultSet waitlistResultSet = DBConnection.getStatement().executeQuery("SELECT w.position, w.cust_id, c.name, c.email, w.join_date, w.notified "
+                            + "FROM Waitlist w JOIN Customer c ON w.cust_id=c.cust_id " + "WHERE w.flight_no='" + flightNo + "' AND w.airline_id='" + airlineId + "' AND w.dep_date='" + date + "' ORDER BY w.position");
                     int count = 0;
-                    while (rs.next()) {
+                    while (waitlistResultSet.next()) {
                         String notified;
-                        if (rs.getBoolean("notified")) {
+                        if (waitlistResultSet.getBoolean("notified")) {
                             notified = "Yes";
                         }
                         else {
                             notified = "No";
                         }
-                        tableModel.addRow(new Object[]{rs.getInt("position"), rs.getInt("cust_id"), rs.getString("name"), rs.getString("email"), rs.getString("join_date"), notified});
+                        waitlistTableModel.addRow(new Object[]{waitlistResultSet.getInt("position"), waitlistResultSet.getInt("cust_id"), waitlistResultSet.getString("name"), waitlistResultSet.getString("email"), waitlistResultSet.getString("join_date"), notified});
                         count++;
                     }
                     messageLabel.setText(count + " customer(s) on waitlist.");
@@ -52,20 +53,20 @@ public class WaitlistTab {
             }
         });
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
-        topPanel.add(new JLabel("Flight No:"));
-        topPanel.add(flightNoField);
-        topPanel.add(new JLabel("Airline ID:"));
-        topPanel.add(airlineField);
-        topPanel.add(new JLabel("Date:"));
-        topPanel.add(dateField);
-        topPanel.add(loadButton);
+        JPanel flightInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        flightInfoPanel.add(new JLabel("Flight No:"));
+        flightInfoPanel.add(flightNoField);
+        flightInfoPanel.add(new JLabel("Airline ID:"));
+        flightInfoPanel.add(airlineField);
+        flightInfoPanel.add(new JLabel("Date:"));
+        flightInfoPanel.add(dateField);
+        flightInfoPanel.add(loadButton);
 
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(new JScrollPane(waitlistTable), BorderLayout.CENTER);
-        panel.add(messageLabel, BorderLayout.SOUTH);
-        return panel;
+        JPanel waitlistPanel = new JPanel(new BorderLayout(5, 5));
+        waitlistPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        waitlistPanel.add(flightInfoPanel, BorderLayout.NORTH);
+        waitlistPanel.add(new JScrollPane(waitlistTable), BorderLayout.CENTER);
+        waitlistPanel.add(messageLabel, BorderLayout.SOUTH);
+        return waitlistPanel;
     }
 }

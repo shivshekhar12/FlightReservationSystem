@@ -7,42 +7,42 @@ public class LoginFrame extends JFrame {
 
     private JTextField textFieldUsername;
     private JTextField textFieldPassword;
-    private JLabel labelMessage;
+    private JLabel statusLabel;
 
     public LoginFrame() {
         buildUI();
     }
 
     private void buildUI() {
-        JLabel labelUser = new JLabel("Username:");
+        JLabel userLabel = new JLabel("Username:");
         textFieldUsername = new JTextField();
 
-        JLabel labelPass = new JLabel("Password:");
+        JLabel passLabel = new JLabel("Password:");
         textFieldPassword = new JPasswordField();
 
-        JPanel inputPanel = new JPanel(new GridLayout(2, 2));
-        inputPanel.add(labelUser);
-        inputPanel.add(textFieldUsername);
-        inputPanel.add(labelPass);
-        inputPanel.add(textFieldPassword);
+        JPanel loginPanel = new JPanel(new GridLayout(2, 2));
+        loginPanel.add(userLabel);
+        loginPanel.add(textFieldUsername);
+        loginPanel.add(passLabel);
+        loginPanel.add(textFieldPassword);
 
-        labelMessage = new JLabel(" ");
+        statusLabel = new JLabel(" ");
 
-        JPanel buttonPanel = getJPanel();
+        JPanel buttonPanel = createButtonPanel();
 
-        JPanel main = new JPanel(new BorderLayout());
-        main.add(inputPanel, BorderLayout.NORTH);
-        main.add(labelMessage, BorderLayout.CENTER);
-        main.add(buttonPanel, BorderLayout.SOUTH);
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(loginPanel, BorderLayout.NORTH);
+        mainPanel.add(statusLabel, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        this.add(main);
+        this.add(mainPanel);
         this.setTitle("Flight Reservation System - Login");
         this.setSize(520, 220);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setVisible(true);
     }
 
-    private JPanel getJPanel() {
+    private JPanel createButtonPanel() {
         JButton buttonLogin = new JButton("Login");
         JButton buttonRegister = new JButton("Register as Customer");
 
@@ -68,17 +68,16 @@ public class LoginFrame extends JFrame {
         String password = textFieldPassword.getText().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
-            labelMessage.setText("Please enter both username and password.");
+            statusLabel.setText("Please enter both username and password.");
             return;
         }
 
         try {
-            String query = "SELECT emp_id, role, name FROM Employee " + "WHERE username='" + username + "' AND password_hash='" + password + "'";
-            ResultSet resultSet = DBConnection.getStatement().executeQuery(query);
-            if (resultSet.next()) {
-                int empId = resultSet.getInt("emp_id");
-                String role = resultSet.getString("role");
-                String name = resultSet.getString("name");
+            ResultSet employeeData = DBConnection.getStatement().executeQuery("SELECT emp_id, role, name FROM Employee " + "WHERE username='" + username + "' AND password_hash='" + password + "'");
+            if (employeeData.next()) {
+                int empId = employeeData.getInt("emp_id");
+                String role = employeeData.getString("role");
+                String name = employeeData.getString("name");
                 this.dispose();
                 if (role.equals("admin")) {
                     new AdminFrame(empId, name);
@@ -90,27 +89,26 @@ public class LoginFrame extends JFrame {
             }
         } 
         catch (SQLException ex) {
-            labelMessage.setText("DB error: " + ex.getMessage());
+            statusLabel.setText("DB error: " + ex.getMessage());
             return;
         }
 
         try {
-            String query = "SELECT cust_id, name FROM Customer " + "WHERE username='" + username + "' AND password_hash='" + password + "'";
-            ResultSet resultSet = DBConnection.getStatement().executeQuery(query);
-            if (resultSet.next()) {
-                int custId = resultSet.getInt("cust_id");
-                String name = resultSet.getString("name");
+            ResultSet customerData = DBConnection.getStatement().executeQuery("SELECT cust_id, name FROM Customer " + "WHERE username='" + username + "' AND password_hash='" + password + "'");
+            if (customerData.next()) {
+                int custId = customerData.getInt("cust_id");
+                String name = customerData.getString("name");
                 this.dispose();
                 new CustomerFrame(custId, name);
                 return;
             }
         } 
         catch (SQLException ex) {
-            labelMessage.setText("DB error: " + ex.getMessage());
+            statusLabel.setText("DB error: " + ex.getMessage());
             return;
         }
 
-        labelMessage.setText("Invalid username or password.");
+        statusLabel.setText("Invalid username or password.");
     }
 
     private void doRegister() {
@@ -120,17 +118,11 @@ public class LoginFrame extends JFrame {
         JTextField textFieldUser = new JTextField();
         JTextField textFieldPass = new JPasswordField();
 
-        Object[] fields = {
-            "Full Name:", textFieldName,
-            "Email:", textFieldEmail,
-            "Phone:", textFieldPhone,
-            "Username:", textFieldUser,
-            "Password:", textFieldPass
-        };
+        Object[] registrationFields = {"Full Name:", textFieldName, "Email:", textFieldEmail, "Phone:", textFieldPhone, "Username:", textFieldUser, "Password:", textFieldPass};
 
-        int result = JOptionPane.showConfirmDialog(this, fields, "Register New Customer", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int userResponse = JOptionPane.showConfirmDialog(this, registrationFields, "Register New Customer", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-        if (result != JOptionPane.OK_OPTION){
+        if (userResponse != JOptionPane.OK_OPTION){
             return;
         }
 
@@ -141,16 +133,16 @@ public class LoginFrame extends JFrame {
         String pass = textFieldPass.getText().trim();
 
         if (name.isEmpty() || email.isEmpty() || user.isEmpty() || pass.isEmpty()) {
-            labelMessage.setText("Name, email, username and password are required.");
+            statusLabel.setText("Name, email, username and password are required.");
             return;
         }
 
         try {
             DBConnection.getStatement().executeUpdate("INSERT INTO Customer (name, email, phone, username, password_hash) " + "VALUES ('" + name + "','" + email + "','" + phone + "','" + user + "','" + pass + "')");
-            labelMessage.setText("Account created. login.");
+            statusLabel.setText("Account created. login.");
         } 
         catch (SQLException ex) {
-            labelMessage.setText("Error: " + ex.getMessage());
+            statusLabel.setText("Error: " + ex.getMessage());
         }
     }
 }

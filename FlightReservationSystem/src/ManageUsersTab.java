@@ -10,12 +10,12 @@ public class ManageUsersTab {
         JComboBox<String> userTypeCombo = new JComboBox<>(new String[]{"Customers", "Representatives"});
         String[] customerColumns = {"ID", "Name", "Email", "Phone", "Username"};
         String[] repColumns = {"ID", "Name", "Role", "Username"};
-        DefaultTableModel tableModel = new DefaultTableModel(customerColumns, 0) {
+        DefaultTableModel customerTableModel = new DefaultTableModel(customerColumns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
             }
         };
-        JTable usersTable = new JTable(tableModel);
+        JTable usersTable = new JTable(customerTableModel);
         usersTable.setRowHeight(22);
         usersTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JLabel messageLabel = new JLabel(" ");
@@ -23,15 +23,15 @@ public class ManageUsersTab {
         JButton loadButton = new JButton("Load");
         loadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                tableModel.setRowCount(0);
+                customerTableModel.setRowCount(0);
                 boolean isCustomer = userTypeCombo.getSelectedIndex() == 0;
                 if (isCustomer) {
-                    updateColumns(tableModel, customerColumns);
+                    updateColumns(customerTableModel, customerColumns);
                     try {
-                        ResultSet rs = DBConnection.getStatement().executeQuery(
+                        ResultSet customerResults = DBConnection.getStatement().executeQuery(
                             "SELECT cust_id, name, email, phone, username FROM Customer ORDER BY name");
-                        while (rs.next()) {
-                            tableModel.addRow(new Object[]{rs.getInt("cust_id"), rs.getString("name"), rs.getString("email"), rs.getString("phone"), rs.getString("username")});
+                        while (customerResults.next()) {
+                            customerTableModel.addRow(new Object[]{customerResults.getInt("cust_id"), customerResults.getString("name"), customerResults.getString("email"), customerResults.getString("phone"), customerResults.getString("username")});
                         }
                     }
                     catch (SQLException ex) {
@@ -39,18 +39,18 @@ public class ManageUsersTab {
                     }
                 }
                 else {
-                    updateColumns(tableModel, repColumns);
+                    updateColumns(customerTableModel, repColumns);
                     try {
-                        ResultSet rs = DBConnection.getStatement().executeQuery("SELECT emp_id, name, role, username FROM Employee ORDER BY name");
-                        while (rs.next()) {
-                            tableModel.addRow(new Object[]{rs.getInt("emp_id"), rs.getString("name"), rs.getString("role"), rs.getString("username")});
+                        ResultSet employeeData = DBConnection.getStatement().executeQuery("SELECT emp_id, name, role, username FROM Employee ORDER BY name");
+                        while (employeeData.next()) {
+                            customerTableModel.addRow(new Object[]{employeeData.getInt("emp_id"), employeeData.getString("name"), employeeData.getString("role"), employeeData.getString("username")});
                         }
                     }
                     catch (SQLException ex) {
                         messageLabel.setText("Error: " + ex.getMessage());
                     }
                 }
-                messageLabel.setText(tableModel.getRowCount() + " record(s) loaded.");
+                messageLabel.setText(customerTableModel.getRowCount() + " record(s) loaded.");
             }
         });
 
@@ -59,10 +59,10 @@ public class ManageUsersTab {
             public void actionPerformed(ActionEvent e) {
                 boolean isCustomer = userTypeCombo.getSelectedIndex() == 0;
                 if (isCustomer) {
-                    showAddCustomerDialog(parentFrame, messageLabel, tableModel);
+                    showAddCustomerDialog(parentFrame, messageLabel, customerTableModel);
                 }
                 else {
-                    showAddRepDialog(parentFrame, messageLabel, tableModel);
+                    showAddRepDialog(parentFrame, messageLabel, customerTableModel);
                 }
             }
         });
@@ -70,18 +70,18 @@ public class ManageUsersTab {
         JButton editButton = new JButton("Edit");
         editButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = usersTable.getSelectedRow();
-                if (selectedRow < 0) {
+                int clickedRow = usersTable.getSelectedRow();
+                if (clickedRow < 0) {
                     messageLabel.setText("Select a row to edit.");
                     return;
                 }
                 boolean isCustomer = userTypeCombo.getSelectedIndex() == 0;
-                int selectedId = (int) tableModel.getValueAt(selectedRow, 0);
+                int targetId = (int) customerTableModel.getValueAt(clickedRow, 0);
                 if (isCustomer) {
-                    showEditCustomerDialog(parentFrame, selectedId, messageLabel, tableModel);
+                    showEditCustomerDialog(parentFrame, targetId, messageLabel, customerTableModel);
                 }
                 else {
-                    showEditRepDialog(parentFrame, selectedId, messageLabel, tableModel);
+                    showEditRepDialog(parentFrame, targetId, messageLabel, customerTableModel);
                 }
             }
         });
@@ -90,30 +90,30 @@ public class ManageUsersTab {
         deleteButton.setForeground(Color.RED);
         deleteButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = usersTable.getSelectedRow();
-                if (selectedRow < 0) {
+                int clickedRow = usersTable.getSelectedRow();
+                if (clickedRow < 0) {
                     messageLabel.setText("Select a row to delete.");
                     return;
                 }
                 boolean isCustomer = userTypeCombo.getSelectedIndex() == 0;
-                int selectedId = (int) tableModel.getValueAt(selectedRow, 0);
-                String selectedName = (String) tableModel.getValueAt(selectedRow, 1);
-                int confirm = JOptionPane.showConfirmDialog(parentFrame, "Delete " + selectedName + "? This cannot be undone.", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+                int userId = (int) customerTableModel.getValueAt(clickedRow, 0);
+                String userName = (String) customerTableModel.getValueAt(clickedRow, 1);
+                int confirm = JOptionPane.showConfirmDialog(parentFrame, "Delete " + userName + "? This cannot be undone.", "Confirm Delete", JOptionPane.YES_NO_OPTION);
                 if (confirm != JOptionPane.YES_OPTION) {
                     return;
                 }
                 try {
-                    String sql;
+                    String deleteQuery;
                     if (isCustomer) {
-                        sql = "DELETE FROM Customer WHERE cust_id=" + selectedId;
+                        deleteQuery = "DELETE FROM Customer WHERE cust_id=" + userId;
                     }
                     else {
-                        sql = "DELETE FROM Employee WHERE emp_id=" + selectedId;
+                        deleteQuery = "DELETE FROM Employee WHERE emp_id=" + userId;
                     }
-                    DBConnection.getStatement().executeUpdate(sql);
-                    tableModel.removeRow(selectedRow);
+                    DBConnection.getStatement().executeUpdate(deleteQuery);
+                    customerTableModel.removeRow(clickedRow);
                     messageLabel.setForeground(new Color(0, 120, 0));
-                    messageLabel.setText(selectedName + " deleted.");
+                    messageLabel.setText(userName + " deleted.");
                 }
                 catch (SQLException ex) {
                     messageLabel.setText("Delete error: " + ex.getMessage());
@@ -121,29 +121,29 @@ public class ManageUsersTab {
             }
         });
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
-        topPanel.add(new JLabel("Viewing:"));
-        topPanel.add(userTypeCombo);
-        topPanel.add(loadButton);
-        topPanel.add(addButton);
-        topPanel.add(editButton);
-        topPanel.add(deleteButton);
+        JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        controlsPanel.add(new JLabel("Viewing:"));
+        controlsPanel.add(userTypeCombo);
+        controlsPanel.add(loadButton);
+        controlsPanel.add(addButton);
+        controlsPanel.add(editButton);
+        controlsPanel.add(deleteButton);
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(controlsPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(usersTable), BorderLayout.CENTER);
         panel.add(messageLabel, BorderLayout.SOUTH);
         return panel;
     }
 
-    private static void updateColumns(DefaultTableModel tableModel, String[] columns) {
-        tableModel.setColumnCount(0);
+    private static void updateColumns(DefaultTableModel dataModel, String[] columns) {
+        dataModel.setColumnCount(0);
         for (String column : columns) {
-            tableModel.addColumn(column);
+            dataModel.addColumn(column);
         }
     }
 
-    private static void showAddCustomerDialog(JFrame parentFrame, JLabel messageLabel, DefaultTableModel tableModel) {
+    private static void showAddCustomerDialog(JFrame parentFrame, JLabel messageLabel, DefaultTableModel customerTableModel) {
         JTextField nameField = new JTextField(20);
         JTextField emailField = new JTextField(20);
         JTextField phoneField = new JTextField(15);
@@ -155,7 +155,8 @@ public class ManageUsersTab {
             return;
         }
         try {
-            DBConnection.getStatement().executeUpdate("INSERT INTO Customer (name,email,phone,username,password_hash) VALUES ('" + nameField.getText().trim() + "','" + emailField.getText().trim() + "','" + phoneField.getText().trim() + "','" + usernameField.getText().trim() + "','" + passwordField.getText().trim() + "')");
+            DBConnection.getStatement().executeUpdate("INSERT INTO Customer (name,email,phone,username,password_hash) VALUES ('" + nameField.getText().trim() + "','" + emailField.getText().trim()
+                    + "','" + phoneField.getText().trim() + "','" + usernameField.getText().trim() + "','" + passwordField.getText().trim() + "')");
             messageLabel.setForeground(new Color(0, 120, 0));
             messageLabel.setText("Customer added.");
         }
@@ -176,7 +177,8 @@ public class ManageUsersTab {
             return;
         }
         try {
-            DBConnection.getStatement().executeUpdate("INSERT INTO Employee (name,role,username,password_hash) VALUES ('" + nameField.getText().trim() + "','" + roleCombo.getSelectedItem() + "','" + usernameField.getText().trim() + "','" + passwordField.getText().trim() + "')");
+            DBConnection.getStatement().executeUpdate("INSERT INTO Employee (name,role,username,password_hash) VALUES ('" + nameField.getText().trim() + "','" + roleCombo.getSelectedItem()
+                    + "','" + usernameField.getText().trim() + "','" + passwordField.getText().trim() + "')");
             messageLabel.setForeground(new Color(0, 120, 0));
             messageLabel.setText("Employee added.");
         }
@@ -187,17 +189,17 @@ public class ManageUsersTab {
 
     private static void showEditCustomerDialog(JFrame parentFrame, int custId, JLabel messageLabel, DefaultTableModel tableModel) {
         try {
-            ResultSet rs = DBConnection.getStatement().executeQuery("SELECT name,email,phone FROM Customer WHERE cust_id=" + custId);
-            if (!rs.next()) {
+            ResultSet customerData = DBConnection.getStatement().executeQuery("SELECT name,email,phone FROM Customer WHERE cust_id=" + custId);
+            if (!customerData.next()) {
                 return;
             }
-            JTextField nameField = new JTextField(rs.getString("name"), 20);
-            JTextField emailField = new JTextField(rs.getString("email"), 20);
-            JTextField phoneField = new JTextField(rs.getString("phone"), 15);
+            JTextField nameField = new JTextField(customerData.getString("name"), 20);
+            JTextField emailField = new JTextField(customerData.getString("email"), 20);
+            JTextField phoneField = new JTextField(customerData.getString("phone"), 15);
             Object[] fields = {"Name:", nameField, "Email:", emailField, "Phone:", phoneField};
-            int dialogResult = JOptionPane.showConfirmDialog(parentFrame, fields, "Edit Customer",
+            int editCustomer = JOptionPane.showConfirmDialog(parentFrame, fields, "Edit Customer",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-            if (dialogResult != JOptionPane.OK_OPTION) {
+            if (editCustomer != JOptionPane.OK_OPTION) {
                 return;
             }
             DBConnection.getStatement().executeUpdate("UPDATE Customer SET name='" + nameField.getText().trim() + "', email='" + emailField.getText().trim() + "', phone='" + phoneField.getText().trim() + "' WHERE cust_id=" + custId);
@@ -211,17 +213,17 @@ public class ManageUsersTab {
 
     private static void showEditRepDialog(JFrame parentFrame, int empId, JLabel messageLabel, DefaultTableModel tableModel) {
         try {
-            ResultSet rs = DBConnection.getStatement().executeQuery("SELECT name, role FROM Employee WHERE emp_id=" + empId);
-            if (!rs.next()) {
+            ResultSet employeeData = DBConnection.getStatement().executeQuery("SELECT name, role FROM Employee WHERE emp_id=" + empId);
+            if (!employeeData.next()) {
                 return;
             }
-            JTextField nameField = new JTextField(rs.getString("name"), 20);
+            JTextField nameField = new JTextField(employeeData.getString("name"), 20);
             JComboBox<String> roleCombo = new JComboBox<>(new String[]{"customer_rep", "admin"});
-            roleCombo.setSelectedItem(rs.getString("role"));
+            roleCombo.setSelectedItem(employeeData.getString("role"));
             Object[] fields = {"Name:", nameField, "Role:", roleCombo};
-            int dialogResult = JOptionPane.showConfirmDialog(parentFrame, fields, "Edit Employee",
+            int userResponse = JOptionPane.showConfirmDialog(parentFrame, fields, "Edit Employee",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-            if (dialogResult != JOptionPane.OK_OPTION) {
+            if (userResponse != JOptionPane.OK_OPTION) {
                 return;
             }
             DBConnection.getStatement().executeUpdate("UPDATE Employee SET name='" + nameField.getText().trim() + "', role='" + roleCombo.getSelectedItem() + "' WHERE emp_id=" + empId);

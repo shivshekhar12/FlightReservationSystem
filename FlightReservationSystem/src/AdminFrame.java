@@ -13,16 +13,16 @@ public class AdminFrame extends JFrame {
     }
 
     private void buildUI() {
-        JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Manage Users", ManageUsersTab.build(this));
-        tabs.addTab("Sales Report", SalesReportTab.build());
-        tabs.addTab("Reservations List", ReservationsListTab.build());
-        tabs.addTab("Revenue Summary", RevenueSummaryTab.build());
-        tabs.addTab("Top Customers", TopCustomersTab.build());
-        tabs.addTab("Active Flights", ActiveFlightsTab.build());
-        tabs.addTab("Flights by Airport", FlightsByAirportTab.build());
-        this.add(tabs);
-        this.setTitle("Admin Dashboard  —  " + empName);
+        JTabbedPane adminTabs = new JTabbedPane();
+        adminTabs.addTab("Manage Users", ManageUsersTab.build(this));
+        adminTabs.addTab("Sales Report", SalesReportTab.build());
+        adminTabs.addTab("Reservations List", ReservationsListTab.build());
+        adminTabs.addTab("Revenue Summary", RevenueSummaryTab.build());
+        adminTabs.addTab("Top Customers", TopCustomersTab.build());
+        adminTabs.addTab("Active Flights", ActiveFlightsTab.build());
+        adminTabs.addTab("Flights by Airport", FlightsByAirportTab.build());
+        this.add(adminTabs);
+        this.setTitle("Admin Dashboard   " + empName);
         this.setSize(950, 620);
         this.setMinimumSize(new Dimension(750, 500));
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
