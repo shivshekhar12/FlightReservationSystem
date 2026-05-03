@@ -38,7 +38,7 @@ public class CustomerFrame extends JFrame {
         final JComboBox<String> tripTypeCombo = new JComboBox<>(new String[]{"One-Way", "Round-Trip"});
         final JTextField returnDateField = new JTextField(10);
         final JCheckBox flexibleCheckBox = new JCheckBox("Flexible +-3 days");
-        final JComboBox<String> sortCombo = new JComboBox<>(new String[]{"Sort: Price Up", "Sort: Price Down", "Sort: Departure Up", "Sort: Departure Down", "Sort: Arrival Up", "Sort: Arrival Down"});
+        final JComboBox<String> sortCombo = new JComboBox<>(new String[]{"Sort: Price Up", "Sort: Price Down", "Sort: Departure Up", "Sort: Departure Down", "Sort: Arrival Up", "Sort: Arrival Down", "Sort: Duration Up", "Sort: Duration Down"});
         final JTextField maxPriceField = new JTextField(6);
         final JComboBox<String> stopsCombo = new JComboBox<>(new String[]{"Any Stops", "Direct Only", "1+ Stop"});
         final JTextField airlineFilterField = new JTextField(5);
@@ -92,7 +92,7 @@ public class CustomerFrame extends JFrame {
                     orderBy = "f.base_economy_fare DESC";
                 }
                 else if (sortCombo.getSelectedIndex() == 2){
-                    orderBy = "f.dep_time ASC";
+                    orderBy = "f.no dep_time ASC";
                 }
                 else if (sortCombo.getSelectedIndex() == 3){
                     orderBy = "f.dep_time DESC";
@@ -100,8 +100,14 @@ public class CustomerFrame extends JFrame {
                 else if (sortCombo.getSelectedIndex() == 4){
                     orderBy = "f.arr_time ASC";
                 }
-                else {
+                else if (sortCombo.getSelectedIndex() == 5) {
                     orderBy = "f.arr_time DESC";
+                }
+                else if (sortCombo.getSelectedIndex() == 6) {
+                    orderBy = "TIMEDIFF(f.arr_time, f.dep_time) ASC";
+                }
+                else {
+                    orderBy = "TIMEDIFF(f.arr_time, f.dep_time) DESC";
                 }
 
                 String dateFilter;
