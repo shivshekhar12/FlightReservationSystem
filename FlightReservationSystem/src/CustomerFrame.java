@@ -92,7 +92,7 @@ public class CustomerFrame extends JFrame {
                     orderBy = "f.base_economy_fare DESC";
                 }
                 else if (sortCombo.getSelectedIndex() == 2){
-                    orderBy = "f.no dep_time ASC";
+                    orderBy = "f.dep_time ASC";
                 }
                 else if (sortCombo.getSelectedIndex() == 3){
                     orderBy = "f.dep_time DESC";
